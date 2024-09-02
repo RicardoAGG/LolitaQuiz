@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Juego de Criminología</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        #game-container {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+        }
+        .question {
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: #34495e;
+        }
+        .options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        button {
+            padding: 10px;
+            font-size: 16px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        #progress-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #ecf0f1;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        #progress {
+            width: 0%;
+            height: 100%;
+            background-color: #2ecc71;
+            border-radius: 10px;
+            transition: width 0.5s ease-in-out;
+        }
+        #score, #time-left {
+            text-align: center;
+            font-size: 18px;
+            margin-top: 10px;
+        }
+        #result {
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            margin-top: 20px;
+            color: #2c3e50;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <h1>Juego de Criminología</h1>
+        <div id="question" class="question"></div>
+        <div id="options" class="options"></div>
+        <div id="progress-bar"><div id="progress"></div></div>
+        <div id="score">Puntuación: 0</div>
+        <div id="time-left"></div>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const questions = [
+            {
+                question: "¿Qué castigo era el más aceptado en la edad media?",
+                options: ["Tortura", "Exilio", "Multa", "Prisión"],
+                correct: "Tortura"
+            },
+            {
+                question: "¿Cómo se llamaba aquella etapa en donde pretendía ocupar métodos no científicos pero no lo eran?",
+                options: ["Pseudociencia", "Protociencia", "Metaciencia", "Anticiencia"],
+                correct: "Pseudociencia"
+            },
+            {
+                question: "¿Qué escuela se centra en el estudio del delito, donde lo ve como un acto de libre albedrío por lo que eran moralmente culpables?",
+                options: ["Escuela clásica", "Escuela positivista", "Escuela crítica", "Escuela funcionalista"],
+                correct: "Escuela clásica"
+            },
+            {
+                question: "¿Quién escribió los principios de la escuela clásica?",
+                options: ["Cesare Beccaria", "Cesare Lombroso", "Enrico Ferri", "Raffaele Garofalo"],
+                correct: "Cesare Beccaria"
+            },
+            {
+                question: "¿Qué escuela propone estudiar al delincuente de forma científica y objetiva y su precursor fue Cesare Lombroso?",
+                options: ["Escuela positivista", "Escuela clásica", "Escuela crítica", "Escuela funcionalista"],
+                correct: "Escuela positivista"
+            },
+            {
+                question: "Según la religión, ¿cuál fue el primer delito?",
+                options: ["La muerte de Caín", "El pecado original", "El robo del fuego", "La Torre de Babel"],
+                correct: "La muerte de Caín"
+            },
+            {
+                question: "Estas ideas se agrupan en lo que llamamos 'escuelas' porque representan enfoques o métodos:",
+                options: ["Escuelas jurídico-penales", "Escuelas filosóficas", "Escuelas sociológicas", "Escuelas psicológicas"],
+                correct: "Escuelas jurídico-penales"
+            },
+            {
+                question: "¿Cuáles son los 4 objetivos de la criminología?",
+                options: [
+                    "El delito, el delincuente, la víctima y el control social",
+                    "La ley, el castigo, la rehabilitación y la prevención",
+                    "El crimen, la pena, la sociedad y el sistema judicial",
+                    "La investigación, el análisis, la teoría y la práctica"
+                ],
+                correct: "El delito, el delincuente, la víctima y el control social"
+            },
+            {
+                question: "¿Por qué se dice que la criminología es una ciencia multidisciplinaria?",
+                options: [
+                    "Se relaciona con otras ciencias para comprender el fenómeno criminal",
+                    "Abarca múltiples tipos de delitos",
+                    "Requiere varios años de estudio en diferentes disciplinas",
+                    "Se practica en múltiples países con diferentes sistemas legales"
+                ],
+                correct: "Se relaciona con otras ciencias para comprender el fenómeno criminal"
+            }
+        ];
+
+        let currentQuestion = 0;
+        let score = 0;
+        let timeLeft = 20;
+        let timer;
+
+        const questionEl = document.getElementById("question");
+        const optionsEl = document.getElementById("options");
+        const resultEl = document.getElementById("result");
+        const timeLeftEl = document.getElementById("time-left");
+        const scoreEl = document.getElementById("score");
+        const progressEl = document.getElementById("progress");
+
+        function loadQuestion() {
+            if (currentQuestion < questions.length) {
+                const question = questions[currentQuestion];
+                questionEl.textContent = `Pregunta ${currentQuestion + 1}: ${question.question}`;
+                optionsEl.innerHTML = "";
+                question.options.forEach(option => {
+                    const button = document.createElement("button");
+                    button.textContent = option;
+                    button.onclick = () => checkAnswer(option);
+                    optionsEl.appendChild(button);
+                });
+                startTimer();
+                updateProgress();
+            } else {
+                showResult();
+            }
+        }
+
+        function checkAnswer(answer) {
+            clearInterval(timer);
+            if (answer === questions[currentQuestion].correct) {
+                score += timeLeft;
+                scoreEl.textContent = `Puntuación: ${score}`;
+            }
+            currentQuestion++;
+            loadQuestion();
+        }
+
+        function startTimer() {
+            timeLeft = 20;
+            updateTimeLeft();
+            timer = setInterval(() => {
+                timeLeft--;
+                updateTimeLeft();
+                if (timeLeft === 0) {
+                    clearInterval(timer);
+                    currentQuestion++;
+                    loadQuestion();
+                }
+            }, 1000);
+        }
+
+        function updateTimeLeft() {
+            timeLeftEl.textContent = `Tiempo restante: ${timeLeft} segundos`;
+        }
+
+        function updateProgress() {
+            const progress = (currentQuestion / questions.length) * 100;
+            progressEl.style.width = `${progress}%`;
+        }
+
+        function showResult() {
+            questionEl.style.display = "none";
+            optionsEl.style.display = "none";
+            timeLeftEl.style.display = "none";
+            resultEl.innerHTML = `
+                <h2>¡Juego completado!</h2>
+                <p>Tu puntuación final: ${score}</p>
+                <p>Nivel de Criminólogo:</p>
+                ${getCriminologistLevel()}
+            `;
+        }
+
+        function getCriminologistLevel() {
+            const maxScore = questions.length * 20;
+            const percentage = (score / maxScore) * 100;
+            if (percentage >= 90) return "<strong>Sherlock Holmes</strong> - ¡Eres un maestro de la criminología!";
+            if (percentage >= 70) return "<strong>Detective Experimentado</strong> - ¡Excelente trabajo!";
+            if (percentage >= 50) return "<strong>Investigador Prometedor</strong> - Buen esfuerzo, sigue estudiando.";
+            return "<strong>Novato Entusiasta</strong> - Hay espacio para mejorar, ¡no te rindas!";
+        }
+
+        loadQuestion();
+    </script>
+</body>
+</html>

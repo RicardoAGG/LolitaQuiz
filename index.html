@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Juego de Mesa de Criminología</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        #game-container {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #2c3e50;
+            text-align: center;
+        }
+        #board {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 5px;
+            margin-bottom: 20px;
+        }
+        .space {
+            width: 100%;
+            aspect-ratio: 1;
+            border: 2px solid #3498db;
+            border-radius: 5px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            font-size: 14px;
+            background-color: #ecf0f1;
+        }
+        .space.start { background-color: #2ecc71; }
+        .space.end { background-color: #e74c3c; }
+        .space.current { background-color: #f1c40f; }
+        #player { font-size: 24px; }
+        .question {
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: #34495e;
+        }
+        .options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        button {
+            padding: 10px;
+            font-size: 16px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        #result, #rules {
+            font-size: 16px;
+            text-align: center;
+            margin-top: 20px;
+            color: #2c3e50;
+        }
+        #start-button {
+            display: block;
+            margin: 20px auto;
+            padding: 15px 30px;
+            font-size: 18px;
+        }
+        #result ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        #result li {
+            margin-bottom: 20px;
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        #result li strong {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 16px;
+            color: #2c3e50;
+        }
+        #result li span {
+            display: block;
+            margin-bottom: 5px;
+        }
+        #result li span.correct {
+            color: #27ae60;
+        }
+        #result li span.incorrect {
+            color: #e74c3c;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <h1>Juego de Mesa de Criminología</h1>
+        <div id="rules">
+            <h2>Reglas del juego</h2>
+            <ol>
+                <li>El juego consta de 25 casillas y 9 preguntas sobre criminología.</li>
+                <li>El jugador comienza en la casilla 1 (verde) y debe llegar a la casilla 25 (roja).</li>
+                <li>Por cada respuesta correcta, el jugador avanza 3 casillas.</li>
+                <li>Si la respuesta es incorrecta, el jugador no se mueve.</li>
+                <li>El juego termina cuando se responden todas las preguntas o se llega a la casilla final.</li>
+            </ol>
+            <button id="start-button">Comenzar Juego</button>
+        </div>
+        <div id="board" style="display: none;"></div>
+        <div id="question" class="question" style="display: none;"></div>
+        <div id="options" class="options" style="display: none;"></div>
+        <div id="result" style="display: none;"></div>
+    </div>
+
+    <script>
+        const questions = [
+            {
+                question: "¿Qué castigo era el más aceptado en la edad media?",
+                options: ["Tortura", "Exilio", "Multa", "Prisión"],
+                correct: "Tortura"
+            },
+            {
+                question: "¿Cómo se llamaba aquella etapa en donde pretendía ocupar métodos no científicos pero no lo eran?",
+                options: ["Pseudociencia", "Protociencia", "Metaciencia", "Anticiencia"],
+                correct: "Pseudociencia"
+            },
+            {
+                question: "¿Qué escuela se centra en el estudio del delito, donde lo ve como un acto de libre albedrío por lo que eran moralmente culpables?",
+                options: ["Escuela clásica", "Escuela positivista", "Escuela crítica", "Escuela funcionalista"],
+                correct: "Escuela clásica"
+            },
+            {
+                question: "¿Quién escribió los principios de la escuela clásica?",
+                options: ["Cesare Beccaria", "Cesare Lombroso", "Enrico Ferri", "Raffaele Garofalo"],
+                correct: "Cesare Beccaria"
+            },
+            {
+                question: "¿Qué escuela propone estudiar al delincuente de forma científica y objetiva y su precursor fue Cesare Lombroso?",
+                options: ["Escuela positivista", "Escuela clásica", "Escuela crítica", "Escuela funcionalista"],
+                correct: "Escuela positivista"
+            },
+            {
+                question: "Según la religión, ¿cuál fue el primer delito?",
+                options: ["La muerte de Caín", "El pecado original", "El robo del fuego", "La Torre de Babel"],
+                correct: "La muerte de Caín"
+            },
+            {
+                question: "Estas ideas se agrupan en lo que llamamos 'escuelas' porque representan enfoques o métodos:",
+                options: ["Escuelas jurídico-penales", "Escuelas filosóficas", "Escuelas sociológicas", "Escuelas psicológicas"],
+                correct: "Escuelas jurídico-penales"
+            },
+            {
+                question: "¿Cuáles son los 4 objetivos de la criminología?",
+                options: [
+                    "El delito, el delincuente, la víctima y el control social",
+                    "La ley, el castigo, la rehabilitación y la prevención",
+                    "El crimen, la pena, la sociedad y el sistema judicial",
+                    "La investigación, el análisis, la teoría y la práctica"
+                ],
+                correct: "El delito, el delincuente, la víctima y el control social"
+            },
+            {
+                question: "¿Por qué se dice que la criminología es una ciencia multidisciplinaria?",
+                options: [
+                    "Se relaciona con otras ciencias para comprender el fenómeno criminal",
+                    "Abarca múltiples tipos de delitos",
+                    "Requiere varios años de estudio en diferentes disciplinas",
+                    "Se practica en múltiples países con diferentes sistemas legales"
+                ],
+                correct: "Se relaciona con otras ciencias para comprender el fenómeno criminal"
+            }
+        ];
+
+        const boardSize = 25;
+        let currentPosition = 0;
+        let currentQuestion = 0;
+        let correctAnswers = 0;
+        let answersSummary = [];
+
+        const boardEl = document.getElementById("board");
+        const questionEl = document.getElementById("question");
+        const optionsEl = document.getElementById("options");
+        const resultEl = document.getElementById("result");
+        const rulesEl = document.getElementById("rules");
+        const startButtonEl = document.getElementById("start-button");
+
+        function createBoard() {
+            boardEl.innerHTML = ''; // Limpiar el contenido del tablero antes de crearlo
+            for (let i = 0; i < boardSize; i++) {
+                const space = document.createElement("div");
+                space.className = "space";
+                space.textContent = i + 1;
+                if (i === 0) space.classList.add("start");
+                if (i === boardSize - 1) space.classList.add("end");
+                boardEl.appendChild(space);
+            }
+            updateBoard();
+        }
+
+        function updateBoard() {
+            const spaces = document.querySelectorAll(".space");
+            spaces.forEach((space, index) => {
+                space.classList.remove("current");
+                if (index === currentPosition) {
+                    space.classList.add("current");
+                    space.innerHTML = `<span id="player">🕵️</span>`;
+                } else {
+                    space.textContent = index + 1;
+                }
+            });
+        }
+
+        function loadQuestion() {
+            if (currentQuestion < questions.length) {
+                const question = questions[currentQuestion];
+                questionEl.textContent = `Pregunta ${currentQuestion + 1}: ${question.question}`;
+                optionsEl.innerHTML = "";
+                question.options.forEach(option => {
+                    const button = document.createElement("button");
+                    button.textContent = option;
+                    button.onclick = () => checkAnswer(option);
+                    optionsEl.appendChild(button);
+                });
+            } else {
+                showResult();
+            }
+        }
+
+        function checkAnswer(answer) {
+            const question = questions[currentQuestion];
+            answersSummary.push({
+                question: question.question,
+                answer: answer,
+                correct: question.correct,
+                isCorrect: answer === question.correct
+            });
+
+            if (answer === question.correct) {
+                correctAnswers++;
+                currentPosition += 3;
+                if (currentPosition >= boardSize - 1) {
+                    currentPosition = boardSize - 1;
+                    showResult();
+                    return;
+                }
+            }
+            
+            currentQuestion++;
+            updateBoard();
+            if (currentQuestion < questions.length) {
+                loadQuestion();
+            } else {
+                showResult();
+            }
+        }
+
+        function showResult() {
+            questionEl.style.display = "none";
+            optionsEl.style.display = "none";
+            boardEl.style.display = "none"; // Ocultar el tablero al final
+            resultEl.style.display = "block";
+            resultEl.innerHTML = `
+                <h2>¡Juego terminado!</h2>
+                <p>Has llegado al final del tablero.</p>
+                <p>Preguntas correctas: ${correctAnswers}</p>
+                <p>Nivel de Criminólogo: ${getCriminologistLevel()}</p>
+                <h3>Resumen de respuestas:</h3>
+                <ul>
+                    ${answersSummary.map(answer => `
+                        <li>
+                            <strong>${answer.question}</strong>
+                            <span class="${answer.isCorrect ? 'correct' : 'incorrect'}">Tu respuesta: ${answer.answer} ${answer.isCorrect ? "(Correcto)" : "(Incorrecto)"}</span>
+                            <span>Respuesta correcta: ${answer.correct}</span>
+                        </li>
+                    `).join('')}
+                </ul>
+            `;
+        }
+
+        function getCriminologistLevel() {
+            const percentage = (correctAnswers / questions.length) * 100;
+            if (percentage >= 90) return "Sherlock Holmes - ¡Eres un maestro de la criminología!";
+            if (percentage >= 70) return "Detective Experimentado - ¡Excelente trabajo!";
+            if (percentage >= 50) return "Investigador Prometedor - Buen esfuerzo, sigue estudiando.";
+            return "Novato Entusiasta - Hay espacio para mejorar, ¡no te rindas!";
+        }
+
+        startButtonEl.addEventListener("click", () => {
+            rulesEl.style.display = "none";
+            boardEl.style.display = "grid";
+            questionEl.style.display = "block";
+            optionsEl.style.display = "grid";
+            createBoard();
+            loadQuestion();
+        });
+    </script>
+</body>
+</html>
